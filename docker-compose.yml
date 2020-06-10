@@ -1,0 +1,29 @@
+version: "3.4"
+
+services:
+    nginx:
+          build:
+              context: .
+              dockerfile: docker/Nginx.Dockerfile
+          ports:
+              - 8098:80
+          volumes:
+              - ./:/var/www/html
+    fpm:
+        build:
+            context: .
+            dockerfile: docker/Fpm.Dockerfile
+        volumes:
+            - ./:/var/www/html
+        environment:
+            XDEBUG_CONFIG: "remote_host=172.17.0.1 remote_enable=1 remote_mode=req remote_port=9005 remote_connect_back=0 idekey=PHPSTORM extended_info=1"
+            PHP_IDE_CONFIG: "serverName=localhost"
+            PHP_XDEBUG_ENABLED: "1"
+    mysql:
+        image: mysql:5.7
+        ports:
+            - 3306:3306
+        environment:
+            - MYSQL_ROOT_PASSWORD=root
+            - MYSQL_DATABASE=startup_laravel
+
