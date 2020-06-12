@@ -15,12 +15,13 @@ class CreatePaysTable extends Migration
     {
         Schema::create('pays', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_id')->default(1);
             $table->foreign('user_id')->references('id')->on('telegram_users');
             $table->string('type');
             $table->string('category');
             $table->string('name');
             $table->string('amount');
+            $table->string('dateTime');
             $table->timestamps();
 
         });

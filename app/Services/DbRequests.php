@@ -7,6 +7,8 @@ use App\Models\TelegramUser;
 use App\Models\Log;
 use App\Models\Pay;
 
+use Carbon\Carbon;
+
 class DbRequests {
 
   public function isUserDefined($username) {
@@ -29,7 +31,7 @@ class DbRequests {
     
   }
 
-  public function addResponseMessage($array) {
+  public function saveMessageToLog($array) {
 
     $message = new Log;
 
@@ -41,19 +43,40 @@ class DbRequests {
   }
 
   public function getLastMessageId() {
-    return Log::latest()->first();
+    $lastMessageId = Log::latest('telegram_message_id')->first();
+    if ($lastMessageId) {
+      return $lastMessageId['telegram_message_id'] + 1;
+    } else {
+      return null;
+    }
   }
 
-  public function addUserPay() {
-    $pay = new Pay;
-    $user = new TelegramUser;
+  public function addUserPay($userId, $userRequest) {
+    // dd($userRequest);
+    $date = Carbon::now();
 
-    $pay->user_id = TelegramUser::find(1)->revenue()->first();
-    $pay->type = 'type';
-    $pay->category = 'category';
-    $pay->name = 'name';
-    $pay->amount = 'amount';
+    $type = $userRequest[1];
+    $category = $userRequest[2];
+    $name = $userRequest[3];
+    $amount = $userRequest[4];
+    $dateTime = isset($userRequest[5]) ? $userRequest[5] : $date->format('Y-m-d H:i:s');
+    
+    // [$command, $type, $category, $name, $amount] = $userRequest;
+
+    $pay = new Pay;
+    $user = TelegramUser::where('telegram_user_id', '=', $userId)->first();
+
+    $pay->user_id = $user->id;
+    $pay->type = $type;
+    $pay->category = $category;
+    $pay->name = $name;
+    $pay->amount = $amount;
+    $pay->dateTime = $dateTime;
 
     $pay->save();
+  }
+
+  public function deleteUserPay($receiptId) {
+    
   }
 }

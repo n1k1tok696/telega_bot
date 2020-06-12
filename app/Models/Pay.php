@@ -6,7 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pay extends Model
 {
+    protected $fillable = ['user_id'];
+
     public function user() {
-        return $this->belongs_to('TelegramUser');
+        return $this->belongsTo('App\Models\TelegramUser');
     }
 }

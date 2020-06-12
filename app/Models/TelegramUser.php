@@ -10,6 +10,6 @@ class TelegramUser extends Model implements Authenticatable
 {
     use AuthenticableTrait;
     public function revenue() {
-        return $this->has_one('Pay');
+        return $this->hasMany('App\Models\Pay');
     }
 }

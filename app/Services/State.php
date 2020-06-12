@@ -11,51 +11,86 @@ use DbService;
 
 class State {
 
+  private $offset = 0;
+  // private $count;
+  // private static $offset = 0;
+
+  // function __construct()
+  // {
+  //   $some = DbService::getLastMessageId();
+  //   if (DbService::getLastMessageId()) {
+  //     Self::$offset = DbService::getLastMessageId();
+  //   }
+  // }
+
   public function getFromTelegram() {
 
-    $last = DbService::getLastMessageId();
-    
-    $last ? $offsetIndex = $last['telegram_message_id'] + 1 : $offsetIndex = 0;
-    $params = [ 'offset' => $offsetIndex];
+    if (DbService::getLastMessageId()) {
+      $this->offset = DbService::getLastMessageId();
+    }
 
+    // $offsetIndex = DbService::getLastMessageId();
+
+    // $params = [ 'offset' => $offsetIndex];
+
+    // dd($this->count);
+    $params = [ 'offset' => $this->offset];
     $data = Telegram::getUpdates($params); 
+    // dd($data);
 
     for ($i=0; $i < count($data); $i++) {
+      if (!isset($data[$i]['edited_message'])) {
+        DbService::saveMessageToLog($data[$i]);
 
-      $this->saveMessage($data[$i]);
+        $telegramMessage = $data[$i]->getMessage();
+        
+        $text = $telegramMessage['text'];
+        $userInfo = $telegramMessage['from'];
+        $userChatId = $telegramMessage['chat']['id'];
+        // $username = $userInfo['username'];
+        // $userId = $userInfo['id'];
 
-      $isNewUser = $data[$i]->getMessage();
-      print_r($data[$i]);
-      if ($data[$i]->getMessage()['text']) {
-        if($isNewUser->getText() === '/start') {
-          $this->commandStart($isNewUser, $data[$i]);
-        } elseif ($isNewUser->getText() === '/pay') {
-          $this->userPay();
+        $userMessage = preg_split('/\s+/', $text);
+        $checkCommand = preg_match('/^\//', $userMessage[0]);
+
+        if ($text && $checkCommand) {
+          if($userMessage[0] === '/start') {
+            $this->commandStart($userInfo, $telegramMessage);
+          } elseif ($userMessage[0] === '/pay') {
+            $this->commandPay($userInfo, $userMessage, $userChatId);
+          } elseif ($userMessage[0] === '/delete') {
+            $this->deleteMessage($receiptId);
+          }
         }
       }
     }
   }
 
-  public function commandStart($check, $data) {
-
-    if(!DbService::isUserDefined($check->getFrom()['username'])) {
-      DbService::addUser($check->getFrom());
+  public function commandStart($userCheck, $data) {
+    $chatId = $data['chat']['id'];
+    $isUserExist = DbService::isUserDefined($userCheck['username']);
+    if(!$isUserExist) {
+      DbService::addUser($userCheck);
     } else {
-      // echo 'You already exist';
       Telegram::sendMessage([
-        'chat_id' => $data->getMessage()['chat']['id'], 
+        'chat_id' => $chatId, 
         'text' => 'You already exist'
       ]);
     }
   }
 
-  public function saveMessage($allMessages) {
-    // echo 'User send /pay';
-    DbService::addResponseMessage($allMessages);
-  }
+  public function commandPay($user, $request, $chatId) {
+    
+    $isUserExist = DbService::isUserDefined($user['username']);
 
-  public function userPay() {
-    DbService::addUserPay();
+    if ($isUserExist && count($request) >= 5) {
+      DbService::addUserPay($user['id'], $request);
+    } else {
+      Telegram::sendMessage([
+        'chat_id' => $chatId, 
+        'text' => $isUserExist ? 'Wrong pay command' : 'I don\'t know you'
+      ]);
+    }
   }
 
   public function deleteMessage() {
