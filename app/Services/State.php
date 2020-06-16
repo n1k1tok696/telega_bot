@@ -55,46 +55,50 @@ class State {
 
         if ($text && $checkCommand) {
           if($userMessage[0] === '/start') {
-            $this->commandStart($userInfo, $telegramMessage);
+            $this->commandStart($userInfo, $userChatId);
           } elseif ($userMessage[0] === '/pay') {
             $this->commandPay($userInfo, $userMessage, $userChatId);
           } elseif ($userMessage[0] === '/delete') {
-            $this->deleteMessage($receiptId);
+            $this->commandDelete($userMessage[1], $userChatId);
+          } else {
+            Telegram::sendMessage([
+              'chat_id' => $userChatId, 
+              'text' => 'I don\'t know this command'
+            ]);
           }
         }
       }
     }
   }
 
-  public function commandStart($userCheck, $data) {
-    $chatId = $data['chat']['id'];
-    $isUserExist = DbService::isUserDefined($userCheck['username']);
-    if(!$isUserExist) {
-      DbService::addUser($userCheck);
-    } else {
-      Telegram::sendMessage([
-        'chat_id' => $chatId, 
-        'text' => 'You already exist'
-      ]);
-    }
+  public function commandStart($userCheck, $chatId) {
+    
+    $returnedMessage = DbService::addUser($userCheck);
+
+    Telegram::sendMessage([
+      'chat_id' => $chatId, 
+      'text' => $returnedMessage
+    ]);
   }
 
   public function commandPay($user, $request, $chatId) {
-    
-    $isUserExist = DbService::isUserDefined($user['username']);
 
-    if ($isUserExist && count($request) >= 5) {
-      DbService::addUserPay($user['id'], $request);
-    } else {
-      Telegram::sendMessage([
-        'chat_id' => $chatId, 
-        'text' => $isUserExist ? 'Wrong pay command' : 'I don\'t know you'
-      ]);
-    }
+    $returnedMessage = DbService::addUserPay($user['username'], $user['id'], $request);
+    
+    Telegram::sendMessage([
+      'chat_id' => $chatId, 
+      'text' => $returnedMessage
+    ]);
   }
 
-  public function deleteMessage() {
-    echo 'User send /delete';
+  public function commandDelete($id, $chatId) {
+    
+    $returnedMessage = DbService::deleteUserPay($id);
+
+    Telegram::sendMessage([
+      'chat_id' => $chatId, 
+      'text' => $returnedMessage
+    ]);
   }
 
 }

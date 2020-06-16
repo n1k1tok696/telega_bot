@@ -17,13 +17,16 @@ Route::get('/', function () {
     return view('pages.home');
 });
 
-Route::get('/income', function () {
-    return view('user.income');
-})->name('dashboard')->middleware('auth');
+// Route::get('/income', function () {
+//     return view('user.income');
+// })->name('dashboard')->middleware('auth');
+Route::get('/income', "ControllerGetdata@income")->name('dashboard')->middleware('auth');
 
-Route::get('/expense', function () {
-    return view('user.expense');
-})->middleware('auth');
+Route::get('/expense', "ControllerGetdata@expense")->middleware('auth');
+
+// Route::get('/expense', function () {
+//     return view('user.expense');
+// })->middleware('auth');
 
 // Route::get('/login', function () {
 //     return view('auth.login');

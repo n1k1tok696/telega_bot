@@ -19,6 +19,12 @@ class DbRequests {
 
   public function addUser($array) {
 
+    $isUserExist = Self::isUserDefined($array['username']);
+
+    if ($isUserExist) {
+      return 'You already exist';
+    }
+
     $user = new TelegramUser;
     
     $user->telegram_user_id = $array['id'];
@@ -29,6 +35,7 @@ class DbRequests {
 
     $user->save();
     
+    return 'Nice to meet you';
   }
 
   public function saveMessageToLog($array) {
@@ -51,11 +58,26 @@ class DbRequests {
     }
   }
 
-  public function addUserPay($userId, $userRequest) {
-    // dd($userRequest);
+  public function addUserPay($userName, $userId, $userRequest) {
+
+    $isUserExist = Self::isUserDefined($userName);
+    if (!$isUserExist || !(count($userRequest) >= 5)) {
+      return $isUserExist ? 'Wrong pay command' : 'I don\'t know you';
+    }
+    
     $date = Carbon::now();
 
-    $type = $userRequest[1];
+    $typeVariationsIncome = ['income', 'доход'];
+    $typeVariationsExpense = ['expense', 'расход'];
+
+    if (in_array($userRequest[1], $typeVariationsIncome)) {
+      $type = 'income';
+    } elseif (in_array($userRequest[1], $typeVariationsExpense)){
+      $type = 'expense';
+    } else {
+      return 'I don\'t know this type'; 
+    }
+
     $category = $userRequest[2];
     $name = $userRequest[3];
     $amount = $userRequest[4];
@@ -74,9 +96,18 @@ class DbRequests {
     $pay->dateTime = $dateTime;
 
     $pay->save();
+
+    return 'Your receipt was added successfully';
   }
 
   public function deleteUserPay($receiptId) {
+    $deletePay = Pay::find($receiptId);
+    if ($deletePay) {
+      $deletePay->delete();
+      return 'Your receipt was deleted successfully';
+    } else {
+      return 'Receipt not found';
+    }
     
   }
 }
